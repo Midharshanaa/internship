@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Show Ticket Booking</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #1e1e2f;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: space-around;
+      z-index: -1;
+    }
+
+    .bar {
+      width: 4px;
+      height: 100px;
+      background: #ff4c60;
+      animation: bounce 1s infinite ease-in-out alternate;
+    }
+
+    .bar:nth-child(2) { animation-delay: 0.1s; background: #4cd137; }
+    .bar:nth-child(3) { animation-delay: 0.2s; background: #00cec9; }
+    .bar:nth-child(4) { animation-delay: 0.3s; background: #ff4c60; }
+    .bar:nth-child(5) { animation-delay: 0.4s; background: #4cd137; }
+
+    @keyframes bounce {
+      from { transform: scaleY(0.3); }
+      to { transform: scaleY(1); }
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.07);
+      padding: 30px 40px;
+      border-radius: 15px;
+      box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
+      width: 400px;
+      backdrop-filter: blur(10px);
+      color: #fff;
+    }
+
+    h1 {
+      color: #ff4c60;
+      font-size: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 8px;
+      margin-top: 5px;
+      background: #2e2e44;
+      color: white;
+    }
+
+    .seats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 15px;
+    }
+
+    .seat {
+      background-color: #353545;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 0;
+      text-align: center;
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .seat:hover {
+      background-color: #4cd137;
+    }
+
+    .seat.selected {
+      background-color: #00cec9;
+    }
+
+    .submit-btn {
+      margin-top: 20px;
+      width: 100%;
+      padding: 10px;
+      background-color: #ff4c60;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .submit-btn:hover {
+      background-color: #ff6b81;
+    }
+
+    .confirmation {
+      text-align: center;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    .confirmation h2 { color: #4cd137; }
+    .confirmation p { margin: 10px 0; font-size: 16px; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Music Background Bars -->
+  <div class="background">
+    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    <div class="bar"></div><div class="bar"></div>
+  </div>
+
+  <!-- Main Booking Form -->
+  <div class="container" id="bookingContainer">
+    <h1>🎶 Book Your Live Show Tickets</h1>
+
+    <form id="bookingForm">
+      <label>Full Name:</label>
+      <input type="text" id="name" required>
+
+      <label>Email:</label>
+      <input type="email" id="email" required>
+
+      <label>How many tickets?</label>
+      <input type="number" id="ticketCount" min="1" max="5" required>
+
+      <label>Select Seats:</label>
+      <div class="seats" id="seatGrid"></div>
+
+      <button type="submit" class="submit-btn">Book Ticket</button>
+    </form>
+  </div>
+
+  <!-- Confirmation -->
+  <div class="container" id="confirmationContainer" style="display: none;">
+    <div class="confirmation">
+      <h2>🎉 Booking Confirmed!</h2>
+      <p><strong>Name:</strong> <span id="confName"></span></p>
+      <p><strong>Email:</strong> <span id="confEmail"></span></p>
+      <p><strong>Seats:</strong> <span id="confSeats"></span></p>
+    </div>
+  </div>
+
+  <script>
+    const seatGrid = document.getElementById('seatGrid');
+    const bookingForm = document.getElementById('bookingForm');
+    const maxSeats = 25; // 5 rows x 5 cols = 25 seats
+
+    let selectedSeats = [];
+    let ticketLimit = 0;
+
+    // Generate seats A1 to E5
+    const rows = ['A', 'B', 'C', 'D', 'E'];
+    rows.forEach(row => {
+      for (let i = 1; i <= 5; i++) {
+        const seat = document.createElement('button');
+        seat.type = 'button';
+        seat.className = 'seat';
+        seat.textContent = row + i;
+        seat.addEventListener('click', () => handleSeatSelect(seat));
+        seatGrid.appendChild(seat);
+      }
+    });
+
+    function handleSeatSelect(seat) {
+      const seatNum = seat.textContent;
+      if (selectedSeats.includes(seatNum)) {
+        seat.classList.remove('selected');
+        selectedSeats = selectedSeats.filter(s => s !== seatNum);
+      } else {
+        if (selectedSeats.length >= ticketLimit) {
+          alert(`You can only select ${ticketLimit} seat(s).`);
+          return;
+        }
+        seat.classList.add('selected');
+        selectedSeats.push(seatNum);
+      }
+    }
+
+    document.getElementById('ticketCount').addEventListener('change', function() {
+      ticketLimit = parseInt(this.value);
+      selectedSeats = [];
+      document.querySelectorAll('.seat').forEach(s => s.classList.remove('selected'));
+    });
+
+    bookingForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+
+      if (selectedSeats.length !== ticketLimit) {
+        alert(`Please select exactly ${ticketLimit} seat(s).`);
+        return;
+      }
+
+      document.getElementById('bookingContainer').style.display = 'none';
+      document.getElementById('confName').textContent = name;
+      document.getElementById('confEmail').textContent = email;
+      document.getElementById('confSeats').textContent = selectedSeats.join(', ');
+      document.getElementById('confirmationContainer').style.display = 'block';
+    });
+  </script>
+</body>
+</html>
